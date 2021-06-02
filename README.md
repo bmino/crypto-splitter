@@ -45,10 +45,10 @@ The contract can be deployed to Fuji or the Avalanche mainnet with:
 
 ```bash
 # Fuji
-npm deployFuji
+npm run deployFuji
 
 # Mainnet
-npm deployMain
+npm run deployMain
 ```
 
 ## Executing Splitting!
