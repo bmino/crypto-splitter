@@ -52,7 +52,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   console.log(`Estimating gas ...`);
   const gas = await paymentTX.estimateGas({ from: WALLET });
   const gasPrice = await web3.eth.getGasPrice();
-  console.log(`Estimated gas: ${Util.convertFloatToString(parseInt(gas) * gasPrice, 18)} AVAX`);
+  console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
   console.log();
 
 
