@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+
+node_modules
+
+#Hardhat files
+cache
+artifacts
+build
+
+.env
+
+config/*.js
+!config/*.example.*

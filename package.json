@@ -1,0 +1,32 @@
+{
+  "name": "crypto-splitter",
+  "description": "Send multiple payments in one transaction",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bmino/crypto-splitter.git"
+  },
+  "author": {
+    "name": "Brandon Mino"
+  },
+  "engines": {
+    "node": "14.16.1",
+    "npm": "7.15.0"
+  },
+  "scripts": {
+    "pay": "node src/Pay.js",
+    "approve": "node src/Approve.js",
+    "test": "npx hardhat test",
+    "deployFuji": "npx hardhat run scripts/splitter-deploy.js --network fuji",
+    "deployMain": "npx hardhat run scripts/splitter-deploy.js --network mainnet"
+  },
+  "devDependencies": {
+    "@eth-optimism/smock": "^1.1.4",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.1.0",
+    "chai": "^4.3.4",
+    "dotenv": "^10.0.0",
+    "hardhat": "^2.3.0",
+    "web3": "^1.3.6"
+  }
+}
