@@ -31,7 +31,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
     // Create multisig transaction
     console.log(`Creating multisig submission transaction ...`);
     const multisigApproveTX = multi.methods.submitTransaction(
-      SPLITTER,
+      TOKEN,
       0,
       approvalBytecode,
     );
