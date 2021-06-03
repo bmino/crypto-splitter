@@ -22,7 +22,7 @@ contract Splitter is ReentrancyGuard {
         address token,
         address[] calldata payees,
         uint256[] calldata amounts
-    ) public {
+    ) public nonReentrant {
         require(
             payees.length == amounts.length,
             "Splitter::pay: INVALID_INPUT_LENGTH"
@@ -55,7 +55,7 @@ contract Splitter is ReentrancyGuard {
         address token,
         uint256 amount,
         address[] calldata payees
-    ) public {
+    ) public nonReentrant {
         IERC20 erc20 = IERC20(token);
 
         require(
