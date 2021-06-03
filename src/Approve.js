@@ -15,9 +15,9 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
   // Create actual approval tx
   console.log(`Creating approval transaction ...`);
-  const approvalTX = await token.methods.approve(SPLITTER, '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+  const directApprovalTX = await token.methods.approve(SPLITTER, '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
 
-  const approvalBytecode = approvalTX.encodeABI();
+  const approvalBytecode = directApprovalTX.encodeABI();
   console.log(`Bytecode:`)
   console.log(approvalBytecode);
   console.log();
@@ -27,36 +27,47 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   console.log(`Current allowance: ${Util.convertStringToFloat(allowance, decimals)} ${symbol}`);
   console.log();
 
-  console.log(`Estimating gas ...`);
-  const gas = await approvalTX.estimateGas({ from: WALLET });
-  const gasPrice = await web3.eth.getGasPrice();
-  console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
-  console.log();
-
-
-  console.log(`Will send transaction in 15 seconds ...`);
-  await new Promise(resolve => setTimeout(resolve, 15000));
-  console.log();
-
-
   if (MULTISIG) {
-    console.log(`Submitting transaction to multisig ...`);
-
-    const multisigTX = multi.methods.submitTransaction(
+    // Create multisig transaction
+    console.log(`Creating multisig submission transaction ...`);
+    const multisigApproveTX = multi.methods.submitTransaction(
       SPLITTER,
       0,
       approvalBytecode,
     );
+    console.log();
 
-    return multisigTX.send({
+    console.log(`Estimating gas ...`);
+    const gas = await multisigApproveTX.estimateGas({ from: WALLET });
+    const gasPrice = await web3.eth.getGasPrice();
+    console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
+    console.log();
+
+    console.log(`Will send multisig transaction in 15 seconds ...`);
+    await new Promise(resolve => setTimeout(resolve, 15000));
+    console.log();
+
+    console.log(`Submitting transaction to multisig ...`);
+
+    return multisigApproveTX.send({
       from: WALLET,
       gas,
       gasPrice,
     });
   } else {
+    console.log(`Estimating gas ...`);
+    const gas = await directApprovalTX.estimateGas({ from: WALLET });
+    const gasPrice = await web3.eth.getGasPrice();
+    console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
+    console.log();
+
+    console.log(`Will send transaction in 15 seconds ...`);
+    await new Promise(resolve => setTimeout(resolve, 15000));
+    console.log();
+
     console.log(`Sending transaction ...`);
 
-    return approvalTX.send({
+    return directApprovalTX.send({
       from: WALLET,
       gas,
       gasPrice,
