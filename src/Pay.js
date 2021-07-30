@@ -16,53 +16,74 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
   const symbol = await token.methods.symbol().call();
   const decimals = parseInt(await token.methods.decimals().call());
+  const gasPrice = await web3.eth.getGasPrice();
 
   // Display friendly UI of payments
-  const table = PAYMENTS.map(p => ({
-    payee: Object.keys(SUPPLIERS).find(key => SUPPLIERS[key].ADDRESS === p.ADDRESS),
-    address: p.ADDRESS.toLowerCase(),
-    amount: p.AMOUNT,
-    friendlyValue: Util.convertBNtoFloat(Web3.utils.toBN(p.AMOUNT), decimals).toLocaleString('en-US', {minimumFractionDigits: 2}),
+  const table = Object.entries(PAYMENTS).map(([address, amount]) => ({
+    name: Object.keys(SUPPLIERS).find(name => SUPPLIERS[name] === address),
+    address,
+    amount,
+    friendlyValue: Util.convertBNtoFloat(Web3.utils.toBN(amount), decimals).toLocaleString('en-US', {minimumFractionDigits: 2}),
     token: symbol,
   }));
   console.table(table);
 
   // Create actual payment tx
-  console.log(`Creating payment splitter transaction ...`);
+  console.log(`Encoding tx and bytecode ...`);
   const directPaymentTX = await splitter.methods.pay(
     TOKEN,
-    PAYMENTS.map(p => p.ADDRESS),
-    PAYMENTS.map(p => p.AMOUNT),
+    Object.keys(PAYMENTS),
+    Object.values(PAYMENTS),
   );
   const paymentBytecode = directPaymentTX.encodeABI();
   console.log(`Bytecode:`)
   console.log(paymentBytecode);
   console.log();
 
-  console.log(`Checking balance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} ...`);
-  const balance = await token.methods.balanceOf(MULTISIG ? MULTISIG : WALLET).call();
-  console.log(`Balance: ${Util.convertStringToFloat(balance, decimals)} ${symbol}`);
+  console.log(`Calculating total sum of all payments ...`);
+  const paymentSumBN = Object.values(PAYMENTS)
+      .map(Util.toBN)
+      .reduce((sum, payment) => sum.add(payment), Util.BN_ZERO);
+  const paymentSum = Util.convertBNtoFloat(paymentSumBN, decimals);
+  console.log(`Payments: ${paymentSum.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
 
-  console.log(`Checking allowance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} for splitter ...`);
-  const allowance = await token.methods.allowance(MULTISIG ? MULTISIG : WALLET, SPLITTER).call();
-  console.log(`Allowance: ${Util.convertStringToFloat(allowance, decimals)} ${symbol}`);
+  console.log(`Checking balance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} ...`);
+  const balanceString = await token.methods.balanceOf(MULTISIG ? MULTISIG : WALLET).call();
+  const balance = Util.convertStringToFloat(balanceString, decimals);
+  console.log(`Balance: ${balance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
+
+  if (paymentSum > balance) {
+    throw new Error(`Insufficient balance to fund payments!`);
+  }
+
+  console.log(`Checking allowance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} for splitter ...`);
+  const allowanceString = await token.methods.allowance(MULTISIG ? MULTISIG : WALLET, SPLITTER).call();
+  const allowance = Util.convertStringToFloat(allowanceString, decimals);
+  console.log(`Allowance: ${allowance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
+  console.log();
+
+  if (paymentSum > allowance) {
+    throw new Error(`Insufficient allowance to fund payments!`);
+  }
 
   if (MULTISIG) {
     // Create multisig transaction
-    console.log(`Creating multisig submission transaction ...`);
     const multisigPaymentTX = multi.methods.submitTransaction(
       SPLITTER,
       0,
       paymentBytecode,
     );
+
+    console.log(`Estimating gas for multisig submission ...`);
+    const gasForSubmission = await multisigPaymentTX.estimateGas({ from: WALLET });
+    console.log(`Estimated gas for submission: ${(parseInt(gasForSubmission) / (10 ** 18) * gasPrice).toFixed(4)} AVAX`);
     console.log();
 
-    console.log(`Estimating gas ...`);
-    const gas = await multisigPaymentTX.estimateGas({ from: WALLET });
-    const gasPrice = await web3.eth.getGasPrice();
-    console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
+    console.log(`Estimating gas for multisig execution ...`);
+    const gasForExecution = await directPaymentTX.estimateGas({ from: MULTISIG });
+    console.log(`Estimated gas for execution: ${(parseInt(gasForExecution) / (10 ** 18) * gasPrice).toFixed(4)} AVAX`);
     console.log();
 
     console.log(`Will send multisig transaction in 15 seconds ...`);
@@ -73,14 +94,13 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
     return multisigPaymentTX.send({
       from: WALLET,
-      gas,
+      gas: gasForSubmission,
       gasPrice,
     });
   } else {
     console.log(`Estimating gas ...`);
     const gas = await directPaymentTX.estimateGas({ from: WALLET });
-    const gasPrice = await web3.eth.getGasPrice();
-    console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(5)} AVAX`);
+    console.log(`Estimated gas: ${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(4)} AVAX`);
     console.log();
 
     console.log(`Will send transaction in 15 seconds ...`);
