@@ -5,12 +5,9 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Splitter is ReentrancyGuard {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     event PaymentERC20(address payee, uint256 payment, address token);
@@ -22,7 +19,7 @@ contract Splitter is ReentrancyGuard {
         address token,
         address[] calldata payees,
         uint256[] calldata amounts
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(
             payees.length == amounts.length,
             "Splitter::pay: INVALID_INPUT_LENGTH"
@@ -39,7 +36,7 @@ contract Splitter is ReentrancyGuard {
     function payAVAX(
         address payable[] calldata payees,
         uint256[] calldata amounts
-    ) public payable nonReentrant {
+    ) external payable nonReentrant {
         require(
             payees.length == amounts.length,
             "Splitter::payAVAX: INVALID_INPUT_LENGTH"
@@ -55,16 +52,16 @@ contract Splitter is ReentrancyGuard {
         address token,
         uint256 amount,
         address[] calldata payees
-    ) public nonReentrant {
+    ) external nonReentrant {
         IERC20 erc20 = IERC20(token);
 
         require(
-            erc20.balanceOf(msg.sender) >= amount.mul(payees.length),
+            erc20.balanceOf(msg.sender) >= amount * payees.length,
             "Splitter::distribute: INSUFFICIENT_BALANCE"
         );
 
         require(
-            erc20.allowance(msg.sender, address(this)) >= amount.mul(payees.length),
+            erc20.allowance(msg.sender, address(this)) >= amount * payees.length,
             "Splitter::distribute: INSUFFICIENT_ALLOWANCE"
         );
 
@@ -77,9 +74,9 @@ contract Splitter is ReentrancyGuard {
     function distributeAVAX(
         uint256 amount,
         address payable[] calldata payees
-    ) public payable nonReentrant {
+    ) external payable nonReentrant {
         require(
-            address(this).balance >= amount.mul(payees.length),
+            address(this).balance >= amount * payees.length,
             "Splitter::distributeAVAX: INSUFFICIENT_BALANCE"
         );
 
