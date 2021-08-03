@@ -1,7 +1,7 @@
 {
   "name": "crypto-splitter",
   "description": "Send multiple payments in one transaction",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/bmino/crypto-splitter.git"
@@ -14,8 +14,9 @@
     "npm": "7.15.0"
   },
   "scripts": {
-    "pay": "node src/Pay.js",
     "approve": "node src/Approve.js",
+    "pay": "node src/Pay.js",
+    "distribute": "node src/Distribute.js",
     "test": "npx hardhat test",
     "deployFuji": "npx hardhat run scripts/splitter-deploy.js --network fuji",
     "deployMain": "npx hardhat run scripts/splitter-deploy.js --network mainnet"

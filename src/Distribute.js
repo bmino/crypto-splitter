@@ -1,6 +1,6 @@
-const { TOKEN, CHUNK, SPLITTER, MULTISIG, WALLET, KEY, RPC} = require('../config/config');
+const { TOKEN, CHUNK, SPLITTER, MULTISIG, WALLET, KEY, RPC } = require('../config/config');
 const ABI = require('../config/abi');
-const PAYMENTS = require('../config/payments');
+const { AMOUNT, RECIPIENTS } = require('../config/distributions');
 const SUPPLIERS = require('../config/suppliers');
 const Util = require('./Util');
 const Web3 = require('web3');
@@ -16,13 +16,12 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   const symbol = await token.methods.symbol().call();
   const decimals = parseInt(await token.methods.decimals().call());
   const gasPrice = await web3.eth.getGasPrice();
+  const friendlyValue = Util.convertStringToFloat(AMOUNT, decimals).toLocaleString('en-US', {minimumFractionDigits: 2});
 
-  console.log(`Calculating total sum of ${PAYMENTS.length} payments ...`);
-  const paymentSumBN = PAYMENTS.map(entry => entry[1])
-    .map(Util.toBN)
-    .reduce((sum, payment) => sum.add(payment), Util.BN_ZERO);
-  const paymentSum = Util.convertBNtoFloat(paymentSumBN, decimals);
-  console.log(`Total: ${paymentSum.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
+  console.log(`Calculating total sum of ${RECIPIENTS.length} distributions ...`);
+  const distributionSumBN = Util.toBN(AMOUNT).muln(RECIPIENTS.length);
+  const distributionSum = Util.convertBNtoFloat(distributionSumBN, decimals);
+  console.log(`Total: ${distributionSum.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
 
   console.log(`Checking balance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} ...`);
@@ -31,8 +30,8 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   console.log(`Balance: ${balance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
 
-  if (paymentSum > balance) {
-    throw new Error(`Insufficient balance to fund payments!`);
+  if (distributionSum > balance) {
+    throw new Error(`Insufficient balance to fund distributions!`);
   }
 
   console.log(`Checking allowance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} for splitter ...`);
@@ -41,70 +40,70 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   console.log(`Allowance: ${allowance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
 
-  if (paymentSum > allowance) {
-    throw new Error(`Insufficient allowance to fund payments!`);
+  if (distributionSum > allowance) {
+    throw new Error(`Insufficient allowance to fund distributions!`);
   }
 
-  // Warn about duplicate suppliers
-  console.log(`Checking for supplier name collisions ...`);
-  Object.values(SUPPLIERS)
-    .filter((address, index, addresses) => addresses.indexOf(address) !== index)
+  // Warn about duplicate addresses
+  console.log(`Checking for duplicate addresses ...`);
+  RECIPIENTS
+    .filter((address, index) => RECIPIENTS.indexOf(address) !== index)
     .forEach(duplicateAddress => {
-      const namesUsed = Object.entries(SUPPLIERS).filter(([n, a]) => a === duplicateAddress).map(([name,]) => name);
-      console.warn(`Duplicate address ${duplicateAddress}: [${namesUsed}]`);
+      const appearances = RECIPIENTS.filter(recipient => recipient.toLowerCase() === duplicateAddress.toLowerCase()).length;
+      console.warn(`Duplicate address ${duplicateAddress}: (x${appearances})`);
     });
   console.log();
 
   // Split into multiple tx's if required
   console.log(`Splitting into batches if necessary ...`);
-  const PAYMENT_BATCHES = [];
-  for (let i = 0; i < PAYMENTS.length; i+=CHUNK) {
-    const batch = PAYMENTS.slice(i, i+CHUNK);
-    PAYMENT_BATCHES.push(batch);
+  const RECIPIENT_BATCHES = [];
+  for (let i = 0; i < RECIPIENTS.length; i+=CHUNK) {
+    const batch = RECIPIENTS.slice(i, i+CHUNK);
+    RECIPIENT_BATCHES.push(batch);
   }
-  console.log(`Split into ${PAYMENT_BATCHES.length} batches of [${PAYMENT_BATCHES.map(batch => batch.length)}] payments`);
+  console.log(`Split into ${RECIPIENT_BATCHES.length} batches of [${RECIPIENT_BATCHES.map(batch => batch.length)}] distributions`);
 
   const tables = [];
-  const directPaymentTXs = [];
+  const directDistributeTXs = [];
 
-  for (const payments of PAYMENT_BATCHES) {
+  for (const recipients of RECIPIENT_BATCHES) {
     // Display friendly UI of payment batches
-    const table = payments.map(([address, amount]) => ({
+    const table = recipients.map((address) => ({
       name: Object.keys(SUPPLIERS).find(name => SUPPLIERS[name] === address),
       address,
-      amount,
-      friendlyValue: Util.convertStringToFloat(amount, decimals).toLocaleString('en-US', {minimumFractionDigits: 2}),
+      AMOUNT,
+      friendlyValue,
       token: symbol,
     }));
     tables.push(table);
 
-    const directPaymentTX = await splitter.methods.pay(
+    const directDistributeTX = splitter.methods.distribute(
       TOKEN,
-      payments.map(entry => entry[0]),
-      payments.map(entry => entry[1]),
+      AMOUNT,
+      recipients,
     );
-    directPaymentTXs.push(directPaymentTX);
+    directDistributeTXs.push(directDistributeTX);
   }
 
   // Display all tables
   tables.forEach(table => console.table(table));
 
   // Display all bytecode
-  directPaymentTXs.forEach((tx, i) => {
-    const txsIncluded = tx.arguments[1].length;
+  directDistributeTXs.forEach((tx, i) => {
+    const txsIncluded = tx.arguments[2].length;
     const txsSubmitted = CHUNK * i;
-    console.log(`Bytecode for ${txsIncluded} Payments (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}):`);
+    console.log(`Bytecode for ${txsIncluded} Distributions (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}):`);
     console.log(tx.encodeABI());
     console.log();
   });
 
-  for (const directPaymentTX of directPaymentTXs) {
+  for (const directDistributeTX of directDistributeTXs) {
     if (MULTISIG) {
       // Create multisig transaction
       const multisigPaymentTX = multi.methods.submitTransaction(
         SPLITTER,
         0,
-        directPaymentTX.encodeABI(),
+        directDistributeTX.encodeABI(),
       );
 
       console.log(`Estimating gas for multisig submission ...`);
@@ -113,7 +112,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
       console.log();
 
       console.log(`Estimating gas for multisig execution ...`);
-      const gasForExecution = await directPaymentTX.estimateGas({ from: MULTISIG });
+      const gasForExecution = await directDistributeTX.estimateGas({ from: MULTISIG });
       console.log(`Estimated gas for execution: ${gasForExecution.toLocaleString('en-US')} (${(parseInt(gasForExecution) / (10 ** 18) * gasPrice).toFixed(4)} AVAX)`);
       console.log();
 
@@ -130,8 +129,8 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
       });
     } else {
       console.log(`Estimating gas ...`);
-      const gas = await directPaymentTX.estimateGas({ from: WALLET });
-      console.log(`Estimated gas: ${gas.toLocaleString('en-us')} (${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(4)} AVAX)`);
+      const gas = await directDistributeTX.estimateGas({ from: WALLET });
+      console.log(`Estimated gas: ${gas.toLocaleString('en-US')} (${(parseInt(gas) / (10 ** 18) * gasPrice).toFixed(4)} AVAX)`);
       console.log();
 
       console.log(`Will send transaction in 15 seconds ...`);
@@ -140,7 +139,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
       console.log(`Sending transaction ...`);
 
-      const receipt = await directPaymentTX.send({
+      const receipt = await directDistributeTX.send({
         from: WALLET,
         gas,
         gasPrice,
