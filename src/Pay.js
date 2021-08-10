@@ -55,6 +55,15 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
     });
   console.log();
 
+  // Warn about invalid addresses
+  console.log(`Checking for invalid addresses ...`);
+  const invalidAddresses = PAYMENTS.map(([address, amount]) => address).filter(address => !web3.utils.isAddress(address));
+  if (invalidAddresses.length > 0) {
+    invalidAddresses.forEach(address => console.warn(`Invalid address ${address}`));
+    throw new Error(`${invalidAddresses.length} invalid addresses detected!`);
+  }
+  console.log();
+
   // Split into multiple tx's if required
   console.log(`Splitting into batches if necessary ...`);
   const PAYMENT_BATCHES = [];

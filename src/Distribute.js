@@ -1,7 +1,6 @@
 const { TOKEN, CHUNK, SPLITTER, MULTISIG, WALLET, KEY, RPC } = require('../config/config');
 const ABI = require('../config/abi');
 const { AMOUNT, RECIPIENTS } = require('../config/distributions');
-const SUPPLIERS = require('../config/suppliers');
 const Util = require('./Util');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider(RPC));
@@ -54,6 +53,15 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
     });
   console.log();
 
+  // Warn about invalid addresses
+  console.log(`Checking for invalid addresses ...`);
+  const invalidAddresses = RECIPIENTS.filter(address => !web3.utils.isAddress(address));
+  if (invalidAddresses.length > 0) {
+    invalidAddresses.forEach(address => console.warn(`Invalid address ${address}`));
+    throw new Error(`${invalidAddresses.length} invalid addresses detected!`);
+  }
+  console.log();
+
   // Split into multiple tx's if required
   console.log(`Splitting into batches if necessary ...`);
   const RECIPIENT_BATCHES = [];
@@ -69,7 +77,6 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   for (const recipients of RECIPIENT_BATCHES) {
     // Display friendly UI of payment batches
     const table = recipients.map((address) => ({
-      name: Object.keys(SUPPLIERS).find(name => SUPPLIERS[name] === address),
       address,
       AMOUNT,
       friendlyValue,
