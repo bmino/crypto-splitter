@@ -5,7 +5,11 @@ const Util = {
   BN_TEN: Web3.utils.toBN(10),
   BN_ZERO: Web3.utils.toBN(0),
 
-  unsafeConvertFloatToBN(value, decimals) {
+  convertFloatToString(float, decimals) {
+    return Util.convertFloatToBN(float, decimals).toString();
+  },
+
+  convertFloatToBN(value, decimals) {
     const stringValue = value.toString();
 
     if (value > Number.MAX_SAFE_INTEGER || stringValue.includes('e')) {
@@ -44,10 +48,6 @@ const Util = {
       // if (unsignedString.replace(/0+$/, '').length >= 18) logger.execution.warn(`Converting ${wholePartString}.${fractionalPartString} will lose precision`);
       return parseFloat(`${wholePartString}.${fractionalPartString}`);
     }
-  },
-
-  convertFloatToString(float, decimals) {
-    return Util.unsafeConvertFloatToBN(float, decimals).toString();
   },
 
   toBN(value) {
