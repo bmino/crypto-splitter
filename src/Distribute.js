@@ -132,7 +132,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
       const receipt = await multisigPaymentTX.send({
         from: WALLET,
         gas: gasForSubmission,
-        gasPrice,
+        gasPrice: await web3.eth.getGasPrice(), // Recalculate gasPrice due to dynamic fees
       });
     } else {
       console.log(`Estimating gas ...`);
@@ -149,7 +149,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
       const receipt = await directDistributeTX.send({
         from: WALLET,
         gas,
-        gasPrice,
+        gasPrice: await web3.eth.getGasPrice(), // Recalculate gasPrice due to dynamic fees
       });
     }
   }
