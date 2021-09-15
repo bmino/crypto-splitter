@@ -1,4 +1,4 @@
-const { TOKEN, CHUNK, SPLITTER, MULTISIG, WALLET, KEY, RPC } = require('../config/config');
+const { TOKEN, CHUNK, SHOW_BYTECODE, SPLITTER, MULTISIG, WALLET, KEY, RPC } = require('../config/config');
 const ABI = require('../config/abi');
 const { AMOUNT, RECIPIENTS } = require('../config/distributions');
 const Util = require('./Util');
@@ -96,13 +96,15 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   tables.forEach(table => console.table(table));
 
   // Display all bytecode
-  directDistributeTXs.forEach((tx, i) => {
-    const txsIncluded = tx.arguments[2].length;
-    const txsSubmitted = CHUNK * i;
-    console.log(`Bytecode for ${txsIncluded} Distributions (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}):`);
-    console.log(tx.encodeABI());
-    console.log();
-  });
+  if (SHOW_BYTECODE) {
+    directDistributeTXs.forEach((tx, i) => {
+      const txsIncluded = tx.arguments[2].length;
+      const txsSubmitted = CHUNK * i;
+      console.log(`Bytecode for ${txsIncluded} Distributions (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}):`);
+      console.log(tx.encodeABI());
+      console.log();
+    });
+  }
 
   for (const directDistributeTX of directDistributeTXs) {
     if (MULTISIG) {
