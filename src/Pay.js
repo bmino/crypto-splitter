@@ -66,11 +66,7 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
   // Split into multiple tx's if required
   console.log(`Splitting into batches if necessary ...`);
-  const PAYMENT_BATCHES = [];
-  for (let i = 0; i < PAYMENTS.length; i+=CHUNK) {
-    const batch = PAYMENTS.slice(i, i+CHUNK);
-    PAYMENT_BATCHES.push(batch);
-  }
+  const PAYMENT_BATCHES = Util.chunk(PAYMENTS, CHUNK);
   console.log(`Split into ${PAYMENT_BATCHES.length} batches of [${PAYMENT_BATCHES.map(batch => batch.length)}] payments`);
 
   const tables = [];

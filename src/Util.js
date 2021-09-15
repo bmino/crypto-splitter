@@ -54,6 +54,15 @@ const Util = {
     return Web3.utils.toBN(value);
   },
 
+  chunk(array, chunkSize) {
+    const batches = [];
+    for (let i = 0; i < array.length; i+=chunkSize) {
+      const batch = array.slice(i, i+chunkSize);
+      batches.push(batch);
+    }
+    return batches;
+  },
+
 };
 
 module.exports = Util;
