@@ -13,3 +13,5 @@ build
 config/*.js
 !config/abi.js
 !config/*.example.*
+
+*-bytecode-*.txt

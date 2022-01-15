@@ -4,6 +4,8 @@ const PAYMENTS = require('../config/payments');
 const SUPPLIERS = require('../config/suppliers');
 const Util = require('./Util');
 const Web3 = require('web3');
+const path = require('path');
+const fs = require('fs');
 const web3 = new Web3(new Web3.providers.HttpProvider(RPC));
 web3.eth.accounts.wallet.add(KEY);
 
@@ -105,11 +107,16 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
 
   // Display all bytecode
   if (SHOW_BYTECODE) {
+    console.log(`Encoding bytecode ...`);
     directPaymentTXs.forEach((tx, i) => {
       const txsIncluded = tx.arguments[1].length;
       const txsSubmitted = CHUNK * i;
-      console.log(`Bytecode for ${txsIncluded} Payments (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}):`);
-      console.log(tx.encodeABI());
+
+      const bytecode = tx.encodeABI();
+      const fileOutput = `./${path.basename(__filename, '.js')}-bytecode-${i}.txt`;
+      fs.writeFileSync(fileOutput, bytecode);
+
+      console.log(`Bytecode for ${txsIncluded} payments (${txsSubmitted + 1}-${txsSubmitted + txsIncluded}) written to ${fileOutput}`);
       console.log();
     });
   }
