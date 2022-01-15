@@ -64,6 +64,15 @@ const multi = MULTISIG ? new web3.eth.Contract(ABI.GNOSIS_MULTISIG, MULTISIG) : 
   }
   console.log();
 
+  // Warn about 0 value payments
+  console.log(`Checking for empty payments ...`);
+  const emptyPaymentAddresses = PAYMENTS.filter(([address, amount]) => parseInt(amount) === 0).map(([address, amount]) => address);
+  if (emptyPaymentAddresses.length > 0) {
+    emptyPaymentAddresses.forEach(address => console.warn(`Empty payment to ${address}`));
+    throw new Error(`${emptyPaymentAddresses.length} empty payments detected!`);
+  }
+  console.log();
+
   // Split into multiple tx's if required
   console.log(`Splitting into batches if necessary ...`);
   const PAYMENT_BATCHES = Util.chunk(PAYMENTS, CHUNK);
