@@ -7,9 +7,7 @@ Transfer crypto to multiple addresses in configurable quantities. Save gas!
 Configuration is found in the `/config` directory. Remove the `.example` from the following files:
 
 * config.example.js
-* distributions.example.js
-* payments.example.js
-* suppliers.example.js
+* payments.example.csv
 
 ### General Config (`/config/config.js`)
 
@@ -17,25 +15,26 @@ This file contains the implementation details of the payments. Which token are y
 
 | Property | Description |
 | -------- | ----------- |
-| **TOKEN** | Address of the token being distributed or transferred. Must support `transferFrom()`. This is not used when sending AVAX. |
 | **CHUNK** | Maximum number of payments/distributions to be included in a batched transaction. |
 | **SPLITTER** | Address of the deployed Splitter contract. |
-| **MULTISIG** | Address of the gnosis multisg being used. `null` if a multisig wallet is not being used. |
+| **MULTISIG** | Address of the multisg being used. `null` if a multisig wallet is not being used. |
+| **MULTISIG_TYPE** | Type of the multisg being used. Valid values are `GNOSIS_MULTISIG`, `GNOSIS_SAFE`, and `null` if a multisig wallet is not being used. |
 | **WALLET** | Address of the wallet submitting (and paying gas) for the initial transaction. |
 | **KEY** | Private key of the WALLET mentioned above. |
 | **RPC** | Json rpc of the network being used. |
 
-### Distributions (`/config/distributions.js`)
+### Payments (`/config/payments.csv`)
 
-This file contains the amount and recipients that should be distributed to.
+This file contains the data for amounts to be sent and to whom. This is a comma separated text file with no headers 
+where each row contains five entries ordered as such:
 
-### Payments (`/config/payments.js`)
+1st: Friendly Payee Name
 
-This file contains the amounts that are to be sent to each supplier.
+2nd: Payee Address
 
-### Suppliers (`/config/suppliers.js`)
+3rd: Payment Friendly Amount
 
-This file contains a list of suppliers for ease of reference when setting up payments.
+4th: Payment Token Address (`AVAX` when paying with AVAX)
 
 
 ## Installation
@@ -63,17 +62,17 @@ After setting up the appropriate configuration files, you are ready to send some
 There are four methods of splitting supported:
 
 1) Pay ERC20
-   * Send varying amounts of a token to a list of suppliers
+   * Send varying amounts of a token to a list of payees
 2) Pay AVAX
-   * Send varying amounts of AVAX to a list of suppliers
+   * Send varying amounts of AVAX to a list of payees
 3) Distribute ERC20
-   * Send a fixed amount of a token to a list of suppliers
+   * Send a fixed amount of a token to a list of payees
 4) Distribute AVAX
-    * Send a fixed amount of AVAX to a list of suppliers
+    * Send a fixed amount of AVAX to a list of payees
     
 ### Easy Method for Paying
 
-The app contains handy shortcuts for using method #1 and #3 above:
+The app determines which of the methods above is most efficient based on the provided payment csv.
 
 ```bash
 # Gives Splitter an unlimited allowance to spend the multisig or wallet's erc20 token
@@ -81,9 +80,6 @@ npm run approve
 
 # Display a graphical overview of payments, and then execute after a 15 second "cold-feet" delay
 npm run pay
-
-# Display a graphical overview of distributions, and then execute after a 15 second "cold-feet" delay
-npm run distribute
 ```
 
 <div style="text-align: center;">
