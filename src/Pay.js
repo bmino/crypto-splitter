@@ -81,8 +81,9 @@ web3.eth.accounts.wallet.add(KEY);
 
   // Warn about duplicate payments
   console.log(`Checking for duplicate payments ...`);
-  PAYMENTS.filter(({payee}, index) => PAYMENTS.indexOf(payee) !== index)
-    .forEach(({payee: duplicateAddress}) => {
+  const uniquePayees = PAYMENTS.map(({payee}) => payee).filter((payee, i, payees) => payees.indexOf(payee) === i);
+  uniquePayees.filter((uniquePayee) => PAYMENTS.filter(({payee}) => payee === uniquePayee).length > 1)
+    .forEach((duplicateAddress) => {
       const namesUsed = PAYMENTS.filter(({payee}) => payee.toLowerCase() === duplicateAddress.toLowerCase()).map(({name}) => name);
       console.warn(`Multiple payments to address ${duplicateAddress}: [${namesUsed.join(', ')}]`);
     });
