@@ -6,4 +6,5 @@ module.exports = {
   WALLET: '0x123...',
   KEY: '123abc123abc...',
   RPC: 'https://api.avax.network/ext/bc/C/rpc',
+  SUBGRAPH: 'https://api.thegraph.com/subgraphs/name/pangolindex/exchange',
 };
