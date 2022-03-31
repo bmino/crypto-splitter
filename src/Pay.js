@@ -32,11 +32,11 @@ web3.eth.accounts.wallet.add(KEY);
   }
 
   // Contracts
-  const token = TOKEN === 'AVAX' ? null : new web3.eth.Contract(ABI.ERC20, TOKEN.toLowerCase());
-  const splitter = new web3.eth.Contract(ABI.SPLITTER, SPLITTER);
+  const tokenContract = TOKEN === 'AVAX' ? null : new web3.eth.Contract(ABI.ERC20, TOKEN.toLowerCase());
+  const splitterContract = new web3.eth.Contract(ABI.SPLITTER, SPLITTER);
 
-  const symbol = TOKEN === 'AVAX' ? 'AVAX' : await token.methods.symbol().call();
-  const decimals = TOKEN === 'AVAX' ? 18 : parseInt(await token.methods.decimals().call());
+  const symbol = TOKEN === 'AVAX' ? 'AVAX' : await tokenContract.methods.symbol().call();
+  const decimals = TOKEN === 'AVAX' ? 18 : parseInt(await tokenContract.methods.decimals().call());
 
   console.log(`Checking payment assets ...`);
   if (!PAYMENTS.every(({token}) => token === 'AVAX' || web3.utils.isAddress(token.toLowerCase()))) {
@@ -58,7 +58,7 @@ web3.eth.accounts.wallet.add(KEY);
   console.log(`Checking balance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} ...`);
   const balanceString = TOKEN === 'AVAX'
     ? await web3.eth.getBalance(MULTISIG ? MULTISIG : WALLET)
-    : await token.methods.balanceOf(MULTISIG ? MULTISIG : WALLET).call();
+    : await tokenContract.methods.balanceOf(MULTISIG ? MULTISIG : WALLET).call();
   const balance = Util.convertStringToFloat(balanceString, decimals);
   console.log(`Balance: ${balance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
   console.log();
@@ -69,7 +69,7 @@ web3.eth.accounts.wallet.add(KEY);
 
   if (TOKEN !== 'AVAX') {
     console.log(`Checking allowance of ${MULTISIG ? `multisig (${MULTISIG})` : `wallet (${WALLET})`} for splitter ...`);
-    const allowanceString = await token.methods.allowance(MULTISIG ? MULTISIG : WALLET, SPLITTER).call();
+    const allowanceString = await tokenContract.methods.allowance(MULTISIG ? MULTISIG : WALLET, SPLITTER).call();
     const allowance = Util.convertStringToFloat(allowanceString, decimals);
     console.log(`Allowance: ${allowance.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
     console.log();
@@ -111,6 +111,7 @@ web3.eth.accounts.wallet.add(KEY);
   console.log(`Splitting into batches if necessary ...`);
   const PAYMENT_BATCHES = Util.chunk(PAYMENTS, CHUNK);
   console.log(`Split into ${PAYMENT_BATCHES.length} ${PAYMENT_BATCHES.length > 1 ? 'batches' : 'batch'} of [${PAYMENT_BATCHES.map(batch => batch.length)}] payments`);
+  console.log();
 
   const tables = [];
   const paymentTXs = [];
@@ -124,7 +125,7 @@ web3.eth.accounts.wallet.add(KEY);
       payee,
       amount: Util.parseCSVFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2}),
       onChainAmount: Util.convertFloatToString(Util.parseCSVFloat(amount), decimals),
-      token,
+      symbol,
     }));
     tables.push(table);
 
@@ -137,13 +138,13 @@ web3.eth.accounts.wallet.add(KEY);
     if (TOKEN === 'AVAX') {
       if (table.every(({onChainAmount}) => onChainAmount === table[0].onChainAmount)) {
         console.log(`Using 'distributeAVAX' method for batch #${index + 1}`);
-        paymentTXs.push(splitter.methods.distributeAVAX(
+        paymentTXs.push(splitterContract.methods.distributeAVAX(
           table[0].onChainAmount,
           table.map(({payee}) => payee),
         ));
       } else {
         console.log(`Using 'payAVAX' method for batch #${index + 1}`);
-        paymentTXs.push(splitter.methods.payAVAX(
+        paymentTXs.push(splitterContract.methods.payAVAX(
           table.map(({payee}) => payee),
           table.map(({onChainAmount}) => onChainAmount),
         ));
@@ -151,14 +152,14 @@ web3.eth.accounts.wallet.add(KEY);
     } else {
       if (table.every(({onChainAmount}) => onChainAmount === table[0].onChainAmount)) {
         console.log(`Using 'distribute' method for batch #${index + 1}`);
-        paymentTXs.push(splitter.methods.distribute(
+        paymentTXs.push(splitterContract.methods.distribute(
           TOKEN,
           table[0].onChainAmount,
           table.map(({payee}) => payee),
         ));
       } else {
         console.log(`Using 'pay' method for batch #${index + 1}`);
-        paymentTXs.push(splitter.methods.pay(
+        paymentTXs.push(splitterContract.methods.pay(
           TOKEN,
           table.map(({payee}) => payee),
           table.map(({onChainAmount}) => onChainAmount),
