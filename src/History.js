@@ -14,6 +14,7 @@ const payees = [
 
 const startBlock = 0; // Should be > Splitter deployment and < first splitting
 const blockRange = 512000; // Number of block events to fetch per batch
+const subgraph = 'https://api.thegraph.com/subgraphs/name/pangolindex/exchange';
 // -----------------------------------------------------------------
 
 
@@ -33,7 +34,7 @@ const splitterContract = new web3.eth.Contract(splitterABI, ADDRESS.SPLITTER);
     while (block < endBlock) {
         blockRanges.push([block, (block += blockRange) - 1]);
     }
-    blockRanges[blockRanges.length - 1][1] = 'latest';
+    blockRanges[blockRanges.length - 1][1] = endBlock;
     console.log(`Calculated ${blockRanges.length} ranges of block size ${blockRange}`);
 
     console.log(`Fetching events ...`);
@@ -129,7 +130,7 @@ async function getTokenInfo(address) {
 
 async function getDerivedAVAX(tokenAddress, blockNumber) {
     const { data: { data: { token } } } = await axios({
-        url: CONFIG.SUBGRAPH,
+        url: subgraph,
         method: 'post',
         data: {
             query: `query {
@@ -150,7 +151,7 @@ async function getAVAXPrice(blockNumber) {
     if (avaxPriceCache[blockNumber]) return avaxPriceCache[blockNumber];
 
     const { data: { data: { bundle } } } = await axios({
-        url: CONFIG.SUBGRAPH,
+        url: subgraph,
         method: 'post',
         data: {
             query: `query {
