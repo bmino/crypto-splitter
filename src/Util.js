@@ -54,6 +54,14 @@ const Util = {
     return Web3.utils.toBN(value);
   },
 
+  parseCSVFloat(input) {
+    return parseFloat(input.replace(',', ''));
+  },
+
+  parseCSVInt(input) {
+    return parseInt(input.replace(',', ''));
+  },
+
   chunk(array, chunkSize) {
     const batches = [];
     for (let i = 0; i < array.length; i+=chunkSize) {

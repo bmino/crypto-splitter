@@ -49,7 +49,7 @@ web3.eth.accounts.wallet.add(KEY);
   }
 
   console.log(`Calculating total sum of ${PAYMENTS.length} payments ...`);
-  const paymentSumBN = PAYMENTS.map(({amount}) => Util.convertFloatToBN(parseFloat(amount), decimals))
+  const paymentSumBN = PAYMENTS.map(({amount}) => Util.convertFloatToBN(Util.parseCSVFloat(amount), decimals))
     .reduce((sum, payment) => sum.add(payment), Util.BN_ZERO);
   const paymentSum = Util.convertBNtoFloat(paymentSumBN, decimals);
   console.log(`Sum: ${paymentSum.toLocaleString('en-US', {minimumFractionDigits: 4})} ${symbol}`);
@@ -100,7 +100,7 @@ web3.eth.accounts.wallet.add(KEY);
 
   // Warn about 0 value payments
   console.log(`Checking for empty payments ...`);
-  const emptyPaymentPayees = PAYMENTS.filter(({amount}) => parseInt(amount) === 0).map(({payee}) => payee);
+  const emptyPaymentPayees = PAYMENTS.filter(({amount}) => Util.parseCSVInt(amount) === 0).map(({payee}) => payee);
   if (emptyPaymentPayees.length > 0) {
     emptyPaymentPayees.forEach((payee) => console.warn(`Empty payment to ${payee}`));
     throw new Error(`${emptyPaymentPayees.length} empty payments detected!`);
@@ -122,8 +122,8 @@ web3.eth.accounts.wallet.add(KEY);
     const table = payments.map(({name, payee, amount, token}) => ({
       name,
       payee,
-      amount: parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2}),
-      onChainAmount: Util.convertFloatToString(parseFloat(amount), decimals),
+      amount: Util.parseCSVFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2}),
+      onChainAmount: Util.convertFloatToString(Util.parseCSVFloat(amount), decimals),
       token,
     }));
     tables.push(table);
