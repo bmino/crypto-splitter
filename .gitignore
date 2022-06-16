@@ -15,4 +15,4 @@ config/*.csv
 !config/abi.js
 !config/*.example.*
 
-*-bytecode-*.txt
+*-bytecode*.txt

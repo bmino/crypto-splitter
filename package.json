@@ -14,9 +14,9 @@
     "npm": "7.15.0"
   },
   "scripts": {
-    "approve": "node src/Approve.js",
-    "pay": "node src/Pay.js",
-    "distribute": "node src/Distribute.js",
+    "approve": "node ./src/Approve.js",
+    "pay": "node ./src/Pay.js",
+    "distribute": "node ./src/Distribute.js",
     "test": "npx hardhat test",
     "deployFuji": "npx hardhat run scripts/splitter-deploy.js --network fuji",
     "deployMain": "npx hardhat run scripts/splitter-deploy.js --network mainnet"
